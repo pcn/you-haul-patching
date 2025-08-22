@@ -26,7 +26,7 @@ diff -ruN openresty.orig/usr/lib/ukp/openresty/launcher/openresty openresty/usr/
 -		   "${UKP_PROXY_PUBLIC_CERT}.key, ${UKP_PROXY_API_CERT}.key, ${UKP_PROXY_INDEX_CERT}.key." \
 +	[ ! -e "${UKP_DATA}/certificates/wildcard.key" ] \
 +	    && die "ERROR: Wildcard certificate files missing:" \
-+		   "${UKP_DATA}/certificates/wildcard.key, ${UKP_DATA}/certificates/wildcard.cert" \
++		   "${UKP_DATA}/certificates/wildcard.key, ${UKP_DATA}/certificates/wildcard.crt" \
  		   $'\n'"Automatic issuing failed." \
  		   "Run 'update-ukp-certificates' manually and examine the output."
  fi
@@ -39,7 +39,7 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template
  
 -		ssl_certificate ${UKP_PROXY_PUBLIC_CERT}.crt;
 -		ssl_certificate_key ${UKP_PROXY_PUBLIC_CERT}.key;
-+		ssl_certificate /var/lib/ukp/data/certificates/wildcard.cert;
++		ssl_certificate /var/lib/ukp/data/certificates/wildcard.crt;
 +		ssl_certificate_key /var/lib/ukp/data/certificates/wildcard.key;
  
  		ssl_certificate_by_lua_file lua/cert.lua;
@@ -50,7 +50,7 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template
  
 -		ssl_certificate ${UKP_PROXY_INDEX_CERT}.crt;
 -		ssl_certificate_key ${UKP_PROXY_INDEX_CERT}.key;
-+		ssl_certificate /var/lib/ukp/data/certificates/wildcard.cert;
++		ssl_certificate /var/lib/ukp/data/certificates/wildcard.crt;
 +		ssl_certificate_key /var/lib/ukp/data/certificates/wildcard.key;
  
  		# Let registry handle uploads
@@ -61,7 +61,7 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template
  
 -		ssl_certificate ${UKP_PROXY_PUBLIC_CERT}.crt;
 -		ssl_certificate_key ${UKP_PROXY_PUBLIC_CERT}.key;
-+		ssl_certificate /var/lib/ukp/data/certificates/wildcard.cert;
++		ssl_certificate /var/lib/ukp/data/certificates/wildcard.crt;
 +		ssl_certificate_key /var/lib/ukp/data/certificates/wildcard.key;
  
  		ssl_certificate_by_lua_file lua/cert.lua;
@@ -72,7 +72,7 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template
  
 -		ssl_certificate ${UKP_PROXY_PUBLIC_CERT}.crt;
 -		ssl_certificate_key ${UKP_PROXY_PUBLIC_CERT}.key;
-+		ssl_certificate /var/lib/ukp/data/certificates/wildcard.cert;
++		ssl_certificate /var/lib/ukp/data/certificates/wildcard.crt;
 +		ssl_certificate_key /var/lib/ukp/data/certificates/wildcard.key;
  
  		ssl_certificate_by_lua_file lua/cert.lua;
@@ -141,11 +141,11 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/consts.lua.template 
 -	-- Load and parse the chain for the API domain certificate
 -	local f, err = io.open('${UKP_PROXY_API_CERT}.crt', 'r')
 +	-- Load and parse the chain for the wildcard certificate
-+	local f, err = io.open('/var/lib/ukp/data/certificates/wildcard.cert', 'r')
++	local f, err = io.open('/var/lib/ukp/data/certificates/wildcard.crt', 'r')
  	if f == nil then
 -		ngx.log(ngx.ERR, 'Failed to open ${UKP_PROXY_API_CERT}.crt: ',
 -		        err)
-+		ngx.log(ngx.ERR, 'Failed to open wildcard.cert: ', err)
++		ngx.log(ngx.ERR, 'Failed to open wildcard.crt: ', err)
  		return nil
  	end
  
@@ -155,7 +155,7 @@ diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/consts.lua.template 
  	if api_chain == nil then
 -		ngx.log(ngx.ERR, 'Failed to parse ${UKP_PROXY_API_CERT}.crt: ',
 -		        err)
-+		ngx.log(ngx.ERR, 'Failed to parse wildcard.cert: ', err)
++		ngx.log(ngx.ERR, 'Failed to parse wildcard.crt: ', err)
  		return nil
  	end
  
