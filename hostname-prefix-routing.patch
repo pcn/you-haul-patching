@@ -1,0 +1,103 @@
+diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/access.lua openresty/usr/lib/ukp/platform/openresty/lua/access.lua
+--- openresty.orig/usr/lib/ukp/platform/openresty/lua/access.lua	2025-08-12 09:03:56.000000000 -0400
++++ openresty/usr/lib/ukp/platform/openresty/lua/access.lua	2025-08-22 00:05:49.926628982 -0400
+@@ -2,7 +2,8 @@
+ local consts = require 'consts'
+ local strings = require 'strings'
+ 
+-if ngx.var.host == consts.proxy_host then
++-- Check if hostname has API prefix (api- or api.) and is within our domain
++if strings.endsWith(ngx.var.host, consts.proxy_domain) and consts.is_api_hostname(ngx.var.host) then
+ 	return ngx.exec('@api_domain')
+ end
+ 
+diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/cert.lua.template openresty/usr/lib/ukp/platform/openresty/lua/cert.lua.template
+--- openresty.orig/usr/lib/ukp/platform/openresty/lua/cert.lua.template	2025-08-12 09:03:56.000000000 -0400
++++ openresty/usr/lib/ukp/platform/openresty/lua/cert.lua.template	2025-08-22 00:05:11.571813166 -0400
+@@ -19,16 +19,21 @@
+ 	-- but it is fine for subdomains. In particular, we see this behavior
+ 	-- for AWS ALBs.
+ 	return
+-elseif name == consts.proxy_host then
+-	-- API domain handler. First check for the API server name. We have a
+-	-- dedicated certificate for it
+-	cert = {
+-		crt = consts.api_cert,
+-		needs_close = false,
+-	}
+-elseif strings.endsWith(name, consts.proxy_domain_app) then
+-	-- APP domain handler. Just fallback to the default certificate
+-	return
++elseif strings.endsWith(name, consts.proxy_domain) then
++	-- Check if this is within our managed domain
++	if consts.is_api_hostname(name) then
++		-- API domain handler. Use dedicated certificate for API hostnames
++		cert = {
++			crt = consts.api_cert,
++			needs_close = false,
++		}
++	elseif consts.is_app_hostname(name) then
++		-- APP domain handler. Just fallback to the default certificate
++		return
++	else
++		-- Other subdomains within our domain, fallback to default certificate
++		return
++	end
+ else
+ 	-- Custom domain handler
+ 	cert = {
+diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/consts.lua.template openresty/usr/lib/ukp/platform/openresty/lua/consts.lua.template
+--- openresty.orig/usr/lib/ukp/platform/openresty/lua/consts.lua.template	2025-08-12 09:03:56.000000000 -0400
++++ openresty/usr/lib/ukp/platform/openresty/lua/consts.lua.template	2025-08-22 00:03:23.069334156 -0400
+@@ -1,4 +1,5 @@
+ local ssl = require 'ngx.ssl'
++local strings = require 'strings'
+ 
+ ---@class (exact) certificate
+ ---@field chain any?
+@@ -49,13 +50,32 @@
+ 	}
+ end
+ 
++---Check if hostname has API prefix (api- or api.)
++---@param hostname string
++---@return boolean
++local function is_api_hostname(hostname)
++	return strings.startsWith(hostname, 'api-') or strings.startsWith(hostname, 'api.')
++end
++
++---Check if hostname has APP prefix (app- or app.)
++---@param hostname string
++---@return boolean
++local function is_app_hostname(hostname)
++	return strings.startsWith(hostname, 'app-') or strings.startsWith(hostname, 'app.')
++end
++
+ local metro = '${UKP_PROXY_METRONAME}' ~= '' and ('${UKP_PROXY_METRONAME}' .. '.') or ''
+ 
+ local M = {
+ 	api_cert = load_api_cert(),
++	-- Single domain zone for both API and APP
+ 	proxy_domain = metro .. '${UKP_PROXY_DOMAIN}',
++	-- Helper functions for hostname prefix detection
++	is_api_hostname = is_api_hostname,
++	is_app_hostname = is_app_hostname,
++	-- Deprecated: kept for backward compatibility, will be removed
+ 	proxy_host = 'api.' .. metro .. '${UKP_PROXY_DOMAIN}',
+-	proxy_domain_app = metro .. '${UKP_PROXY_DOMAIN_APP}',
++	proxy_domain_app = metro .. '${UKP_PROXY_DOMAIN}',
+ }
+ 
+ return M
+diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/lua/strings.lua openresty/usr/lib/ukp/platform/openresty/lua/strings.lua
+--- openresty.orig/usr/lib/ukp/platform/openresty/lua/strings.lua	2025-08-12 09:03:56.000000000 -0400
++++ openresty/usr/lib/ukp/platform/openresty/lua/strings.lua	2025-08-22 00:06:08.601539304 -0400
+@@ -4,4 +4,8 @@
+ 	return #str >= #suffix and str:sub(-#suffix) == suffix
+ end
+ 
++function M.startsWith(str, prefix)
++	return #str >= #prefix and str:sub(1, #prefix) == prefix
++end
++
+ return M
