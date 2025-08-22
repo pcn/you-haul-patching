@@ -1,3 +1,35 @@
+diff -ruN openresty.orig/usr/lib/ukp/openresty/launcher/openresty openresty/usr/lib/ukp/openresty/launcher/openresty
+--- openresty.orig/usr/lib/ukp/openresty/launcher/openresty	2025-08-12 07:49:19.000000000 -0400
++++ openresty/usr/lib/ukp/openresty/launcher/openresty	2025-08-22 18:31:48.757555487 -0400
+@@ -157,20 +157,20 @@
+ export UKP_PROXY_METRONAME="${DNS_HOSTNAME}"
+ export UKP_PROXY_PUBLIC_ADDR="${OPENRESTY_PUBLIC_ADDR}"
+ export UKP_PROXY_PUBLIC_ADDR_V6="${OPENRESTY_PUBLIC_ADDR6}"
+-export UKP_PROXY_PUBLIC_CERT="${UKP_DATA}/certificates/_.${DNS_HOSTNAME}.${DNS_ZONE_APP}"
++export UKP_PROXY_PUBLIC_CERT="${UKP_DATA}/certificates/wildcard"
+ export UKP_PROXY_API_ADDR="${UKP_PROXY_PUBLIC_ADDR}"
+-export UKP_PROXY_API_CERT="${UKP_DATA}/certificates/api.${DNS_HOSTNAME}.${DNS_ZONE_API}"
+-export UKP_PROXY_INDEX_CERT="${UKP_DATA}/certificates/index.${DNS_HOSTNAME}.${DNS_ZONE_API}"
++export UKP_PROXY_API_CERT="${UKP_DATA}/certificates/wildcard"
++export UKP_PROXY_INDEX_CERT="${UKP_DATA}/certificates/wildcard"
+ 
+ [ -z "${UKP_PROXY_PUBLIC_ADDR}" -o -z "${UKP_PROXY_API_ADDR}" ] \
+     && die "${NET_IFACE}: Failed to retrieve IPv4 address of public interface"
+ 
+-# Request required certificates (lego)
+-if [ ! -e "${UKP_PROXY_PUBLIC_CERT}.key" -o ! -e "${UKP_PROXY_API_CERT}.key" -o ! -e "${UKP_PROXY_INDEX_CERT}.key" ]; then
++# Request required certificates (wildcard)
++if [ ! -e "${UKP_DATA}/certificates/wildcard.key" ]; then
+ 	/usr/sbin/update-ukp-certificates notrigger || true # package: ukp-lego
+-	[ ! -e "${UKP_PROXY_PUBLIC_CERT}.key" -o ! -e "${UKP_PROXY_API_CERT}.key" -o ! -e "${UKP_PROXY_INDEX_CERT}.key" ] \
+-	    && die "ERROR: One or all certificate files missing:" \
+-		   "${UKP_PROXY_PUBLIC_CERT}.key, ${UKP_PROXY_API_CERT}.key, ${UKP_PROXY_INDEX_CERT}.key." \
++	[ ! -e "${UKP_DATA}/certificates/wildcard.key" ] \
++	    && die "ERROR: Wildcard certificate files missing:" \
++		   "${UKP_DATA}/certificates/wildcard.key, ${UKP_DATA}/certificates/wildcard.cert" \
+ 		   $'\n'"Automatic issuing failed." \
+ 		   "Run 'update-ukp-certificates' manually and examine the output."
+ fi
 diff -ruN openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template openresty/usr/lib/ukp/platform/openresty/conf/nginx.conf.template
 --- openresty.orig/usr/lib/ukp/platform/openresty/conf/nginx.conf.template	2025-08-21 22:53:47.000000000 -0400
 +++ openresty/usr/lib/ukp/platform/openresty/conf/nginx.conf.template	2025-08-22 18:12:32.961600114 -0400
